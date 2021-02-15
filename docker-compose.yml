@@ -1,0 +1,172 @@
+version: '2'
+services:
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./volumes/portainer/data:/data
+
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./volumes/sonarr/data:/config
+      - ./mnt/user/home-nas/media:/media
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+
+  radarr:
+    image: linuxserver/radarr:5.14
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./volumes/radarr/config:/config
+      - ./mnt/user/home-nas/media:/media
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+
+  lidarr:
+    image: linuxserver/lidarr
+    container_name: lidarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./volumes/lidarr/config:/config
+      - ./Music:/music
+      - ./Downloads:/downloads
+    ports:
+      - 8686:8686
+    restart: unless-stopped
+      
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=022 #optional
+    volumes:
+      - ./volumes/bazarr/config:/config
+      - ./mnt/user/home-nas/media:/media
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - AUTO_UPDATE=true #optional
+      # - RUN_OPTS=<run options here> #optional
+    volumes:
+      - ./volumes/jackett/config:/config
+      - ./mnt/user/home-nas/media:/media
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+
+  jellyfin:
+    image: ghcr.io/linuxserver/jellyfin:bionic
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=<022> #optional
+    volumes:
+      - ./volumes/jellyfin/config:/config
+      - ./mnt/user/home-nas/media:/media
+      #- /opt/vc/lib:/opt/vc/lib #optional
+    ports:
+      - 8096:8096
+      - 8920:8920 #optional
+      - 7359:7359/udp #optional
+      - 1900:1900/udp #optional
+    #devices:
+      #- /dev/dri:/dev/dri #optional
+      #- /dev/vcsm:/dev/vcsm #optional
+      #- /dev/vchiq:/dev/vchiq #optional
+      #- /dev/video10:/dev/video10 #optional
+      #- /dev/video11:/dev/video11 #optional
+      #- /dev/video12:/dev/video12 #optional
+     restart: unless-stopped
+
+  plex:
+    image: ghcr.io/linuxserver/plex:bionic
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      - UMASK_SET=022 #optional
+      # - PLEX_CLAIM= #optional
+    volumes:
+      - ./volumes/plex/library:/config
+      - ./mnt/user/home-nas/media:/media
+    restart: unless-stopped
+
+  deluge:
+    image: linuxserver/deluge
+    container_name: deluge
+    network_mode: host
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Sofia
+      - UMASK_SET=022 #optional
+      - DELUGE_LOGLEVEL=error #optional
+    volumes:
+      - ./volumes/deluge/config:/config
+      - ./mnt/user/home-nas/media:/media
+    ports:
+      - 8112:8112
+      - 58846:58846
+      - 58946:58946
+    restart: unless-stopped
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    # network_mode: host
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp"
+      - "8089:80/tcp"
+      #- "443:443/tcp"
+    env_file:
+      - ./services/pihole/pihole.env
+    volumes:
+       - ./volumes/pihole/etc-pihole/:/etc/pihole/
+       - ./volumes/pihole/etc-dnsmasq.d/:/etc/dnsmasq.d/
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
